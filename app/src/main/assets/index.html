@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Bill</title>
+<style>
+:root{--y:#ffc21a;--blue:#0f2a4a;--ink:#14181f;--mut:#5b6472;--bg:#eef1f5;--card:#fff;--line:#d9dee6;--red:#c62828;--green:#1b8a3a}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Noto Sans Tamil","Noto Sans",Roboto,sans-serif}
+header{background:var(--blue);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+header h1{font-size:19px;margin:0;flex:1;line-height:1.2}
+header small{display:block;font-size:12px;font-weight:400;opacity:.75}
+.icon{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:10px;min-width:44px;height:44px;font-size:14px;padding:0 12px}
+main{padding:12px;max-width:720px;margin:auto}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--blue)}
+.mic-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0 4px}
+#mic{width:120px;height:120px;border-radius:50%;border:0;background:var(--y);box-shadow:0 6px 0 #d49b00,0 10px 24px rgba(0,0,0,.18);display:grid;place-items:center}
+#mic:active{transform:translateY(4px);box-shadow:0 2px 0 #d49b00}
+#mic.on{background:#ff5a4e;box-shadow:0 6px 0 #b3261e;animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.05)}}
+@media(prefers-reduced-motion:reduce){#mic.on{animation:none}}
+#mic svg{width:52px;height:52px}
+.mic-label{font-weight:700;font-size:17px}
+.hint{font-size:13px;color:var(--mut);background:#fff8e1;border-radius:10px;padding:8px 10px;margin:8px 0 0}
+textarea,input,select{font:inherit;font-size:16px;width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;background:#fff;color:var(--ink)}
+textarea{min-height:70px;resize:vertical}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid #2f6fd6;outline-offset:1px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn{flex:1 1 auto;min-height:48px;border:0;border-radius:12px;font:inherit;font-weight:700;padding:0 14px;background:var(--blue);color:#fff}
+.btn.alt{background:#e3e8ef;color:var(--ink)}
+.btn.y{background:var(--y);color:#1a1300}
+.btn.g{background:var(--green)}
+label{font-size:13px;color:var(--mut);display:block;margin:8px 0 3px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.item{border:1.5px solid var(--line);border-radius:12px;padding:8px;margin-top:8px;display:grid;grid-template-columns:72px 92px minmax(0,1fr) 44px;gap:6px;align-items:center}
+.item .d{grid-column:1/-1}
+.item input,.item select{padding:8px;font-size:16px}
+.item .x{height:40px;border:0;border-radius:10px;background:#fdecea;color:var(--red);font-size:20px}
+.item .amt{text-align:right}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding-top:10px;border-top:2px dashed var(--line)}
+.total b{font-size:28px;white-space:nowrap}
+.inwords{font-size:13px;color:var(--mut);margin-top:2px}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:24px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+.hist{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.hist:last-child{border:0}
+.hist button{border:0;background:#e8eef8;color:var(--blue);border-radius:8px;min-height:40px;padding:0 12px;font:inherit;font-weight:600}
+.empty{color:var(--mut);font-size:14px}
+#settings{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:10;padding:16px;overflow:auto}
+#settings .card{max-width:520px;margin:30px auto}
+/* printable bill */
+#bill{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px;font-size:14px;color:#000}
+#bill .bh{text-align:center;border-bottom:2px solid #000;padding-bottom:8px}
+#bill .bh h3{margin:0;font-size:22px;letter-spacing:.5px}
+#bill .bh p{margin:2px 0;font-size:13px}
+#bill .tag{display:inline-block;border:1.5px solid #000;padding:1px 10px;font-weight:700;margin-top:6px;font-size:13px}
+#bill .meta{display:flex;justify-content:space-between;margin:10px 0;gap:8px;flex-wrap:wrap}
+#bill table{width:100%;border-collapse:collapse}
+#bill th,#bill td{border:1px solid #000;padding:6px;vertical-align:top}
+#bill th{background:#f0f0f0;font-size:12px}
+#bill td.n{text-align:right;white-space:nowrap}
+#bill .tot td{font-weight:700;font-size:15px}
+#bill .sig{display:flex;justify-content:space-between;margin-top:36px;font-size:13px}
+@media print{
+  body{background:#fff}
+  header,.noprint{display:none!important}
+  main{padding:0;max-width:none}
+  .card{box-shadow:none;padding:0;margin:0}
+  #bill{border:0;padding:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hShop">Voice Bill<small>தமிழில் பேசுங்கள் → பில் ரெடி</small></h1>
+  <button class="icon" id="btnSet" aria-label="Shop settings">⚙ கடை</button>
+</header>
+
+<main>
+  <section class="card noprint">
+    <div class="mic-wrap">
+      <button id="mic" aria-label="Speak in Tamil">
+        <svg viewBox="0 0 24 24" fill="#1a1300"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      </button>
+      <div class="mic-label" id="micLabel">தட்டி பேசுங்கள்</div>
+    </div>
+    <p class="hint">உதாரணம்: <b>“கஸ்டமர் பெயர் திருப்பதி கேர், கிரேன் கேபின் வேலை செய்தது ஒரு செட் 25000, பின் புஷ் அடித்தது 5 நம்பர் 5000 ரூபாய்”</b><br>ஒவ்வொரு ஐட்டமும் தனியா மைக் தட்டி சொல்லலாம் — பில்லில் சேர்ந்துகொண்டே போகும்.</p>
+    <label for="said">நீங்கள் சொன்னது (திருத்தலாம்)</label>
+    <textarea id="said" placeholder="மைக் வேலை செய்யலைனா இங்க டைப் பண்ணுங்க / கீபோர்டு மைக் பயன்படுத்துங்க"></textarea>
+    <div class="row">
+      <button class="btn y" id="btnParse">பில் போடு</button>
+      <button class="btn alt" id="btnNew">புது பில்</button>
+    </div>
+  </section>
+
+  <section class="card noprint">
+    <h2>பில் விவரம்</h2>
+    <div class="grid2">
+      <div><label for="billNo">Bill No</label><input id="billNo" inputmode="numeric"></div>
+      <div><label for="billDate">Date</label><input id="billDate" type="date"></div>
+    </div>
+    <label for="cust">Customer பெயர்</label>
+    <input id="cust" placeholder="Customer name">
+    <label for="custPh">Customer Phone (optional)</label>
+    <input id="custPh" inputmode="tel" placeholder="">
+    <div id="items"></div>
+    <div class="row"><button class="btn alt" id="btnAdd">+ ஐட்டம் சேர்</button></div>
+    <div class="total"><span>மொத்தம் / Total</span><b id="tot">₹0</b></div>
+    <div class="inwords" id="words"></div>
+  </section>
+
+  <section class="card noprint">
+    <div class="row">
+      <button class="btn g" id="btnShare">WhatsApp / Share</button>
+      <button class="btn" id="btnPrint">PDF / Print</button>
+    </div>
+    <div class="row"><button class="btn alt" id="btnSave">பில் சேமி (Save)</button></div>
+  </section>
+
+  <section class="card">
+    <h2 class="noprint">பில் முன்னோட்டம்</h2>
+    <div id="bill"></div>
+  </section>
+
+  <section class="card noprint">
+    <h2>பழைய பில்கள்</h2>
+    <div id="history"></div>
+  </section>
+</main>
+
+<div id="settings">
+  <div class="card">
+    <h2>கடை விவரம் (ஒரு முறை போதும்)</h2>
+    <label for="sName">Workshop / கடை பெயர்</label><input id="sName" placeholder="METTUR CRANE SERVICE">
+    <label for="sAddr">முகவரி</label><textarea id="sAddr" style="min-height:56px" placeholder="Salem Main Road, Mettur"></textarea>
+    <label for="sPh">Phone</label><input id="sPh" inputmode="tel">
+    <label for="sNote">பில் கீழே குறிப்பு</label><input id="sNote" placeholder="Thank you! Visit again">
+    <div class="row"><button class="btn" id="sSave">சேமி</button><button class="btn alt" id="sClose">மூடு</button></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="parser.js"></script>
+<script>
+{
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const UNITS = ['Nos', 'Set', 'Pcs', 'Job', 'Lot', 'Mtr', 'Ft', 'Ltr', 'Kg', 'Hrs', 'Day'];
+let shop = store.get('shop', { name: '', addr: '', ph: '', note: 'Thank you! Visit again' });
+let bill;
+const today = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const inr = n => '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmtDate = s => { const [y, m, d] = (s || '').split('-'); return d ? `${d}-${m}-${y}` : ''; };
+
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2600); }
+
+function newBill() {
+  bill = { no: store.get('nextNo', 1), date: today(), customer: '', phone: '', items: [], said: '' };
+  render();
+}
+function total() { return bill.items.reduce((s, i) => s + (+i.amount || 0), 0); }
+
+function renderItems() {
+  $('items').innerHTML = bill.items.map((it, k) => `
+    <div class="item" data-k="${k}">
+      <input class="d" data-f="desc" value="${esc(it.desc)}" placeholder="வேலை / பொருள்">
+      <input data-f="qty" inputmode="decimal" value="${esc(it.qty)}" aria-label="Qty">
+      <select data-f="unit" aria-label="Unit">${UNITS.map(u => `<option${u === it.unit ? ' selected' : ''}>${u}</option>`).join('')}</select>
+      <input class="amt" data-f="amount" inputmode="decimal" value="${esc(it.amount || '')}" placeholder="தொகை ₹" aria-label="Amount">
+      <button class="x" data-del="${k}" aria-label="Delete">×</button>
+    </div>`).join('') || '<p class="empty">இன்னும் ஐட்டம் இல்லை — மைக் தட்டி சொல்லுங்கள்.</p>';
+}
+function renderBill() {
+  const t = total();
+  $('tot').textContent = inr(t);
+  $('words').textContent = t ? 'Rupees ' + VoiceParser.words(t) + ' Only' : '';
+  const name = shop.name || 'உங்கள் கடை பெயர் (⚙ கடை)';
+  $('hShop').innerHTML = esc(shop.name || 'Voice Bill') + '<small>தமிழில் பேசுங்கள் → பில் ரெடி</small>';
+  $('bill').innerHTML = `
+    <div class="bh"><h3>${esc(name.toUpperCase())}</h3>
+      ${shop.addr ? `<p>${esc(shop.addr).replace(/\n/g, '<br>')}</p>` : ''}
+      ${shop.ph ? `<p>Ph: ${esc(shop.ph)}</p>` : ''}
+      <span class="tag">CASH BILL</span></div>
+    <div class="meta"><span><b>Bill No:</b> ${esc(bill.no)}</span><span><b>Date:</b> ${fmtDate(bill.date)}</span></div>
+    <div style="margin-bottom:8px"><b>To:</b> ${esc(bill.customer) || '—'}${bill.phone ? ' &nbsp;Ph: ' + esc(bill.phone) : ''}</div>
+    <table><thead><tr><th style="width:34px">S.No</th><th>Particulars</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>
+    ${bill.items.map((i, k) => { const q = +i.qty || 1, a = +i.amount || 0; return `<tr><td>${k + 1}</td><td>${esc(i.desc)}</td><td class="n">${esc(i.qty)} ${esc(i.unit)}</td><td class="n">${inr(a / q)}</td><td class="n">${inr(a)}</td></tr>`; }).join('')}
+    <tr class="tot"><td colspan="4" style="text-align:right">TOTAL</td><td class="n">${inr(t)}</td></tr></tbody></table>
+    <p style="margin:8px 0 0;font-size:13px"><b>Amount in words:</b> ${t ? 'Rupees ' + VoiceParser.words(t) + ' Only' : '-'}</p>
+    <div class="sig"><span>${esc(shop.note || '')}</span><span style="text-align:center">For ${esc(name.toUpperCase())}<br><br><br>Signature</span></div>`;
+}
+function render() {
+  $('billNo').value = bill.no; $('billDate').value = bill.date; $('cust').value = bill.customer; $('custPh').value = bill.phone || '';
+  $('said').value = bill.said || '';
+  renderItems(); renderBill(); renderHistory();
+}
+
+function applyParsed(r, replace) {
+  if (r.customer) bill.customer = r.customer;
+  if (r.shop && !shop.name) { shop.name = r.shop.toUpperCase(); store.set('shop', shop); }
+  bill.items = replace ? r.items : bill.items.concat(r.items);
+  $('cust').value = bill.customer;
+  renderItems(); renderBill();
+  if (!r.items.length && !r.customer) toast('புரியவில்லை — மீண்டும் சொல்லுங்கள்');
+  else toast(r.items.length + ' ஐட்டம் சேர்க்கப்பட்டது');
+}
+
+// voice
+const hasNative = !!(window.Android && Android.startVoice);
+let rec = null;
+window.onVoice = text => {
+  $('mic').classList.remove('on'); $('micLabel').textContent = 'தட்டி பேசுங்கள்';
+  if (!text) return;
+  bill.said = (bill.said ? bill.said + ' . ' : '') + text;
+  $('said').value = bill.said;
+  applyParsed(VoiceParser.parse(text), false);
+};
+window.onVoiceError = msg => {
+  $('mic').classList.remove('on'); $('micLabel').textContent = 'தட்டி பேசுங்கள்';
+  toast(msg || 'மைக் வேலை செய்யவில்லை — கீபோர்டு மைக்கில் டைப் செய்யுங்கள்');
+};
+$('mic').addEventListener('click', () => {
+  if (hasNative) { $('mic').classList.add('on'); $('micLabel').textContent = 'கேட்கிறது…'; Android.startVoice(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return onVoiceError('இந்த browser-ல் voice இல்லை — கீழே டைப் செய்யுங்கள்');
+  if (rec) { rec.stop(); return; }
+  rec = new SR(); rec.lang = 'ta-IN'; rec.interimResults = false; rec.maxAlternatives = 1;
+  rec.onresult = e => onVoice(e.results[0][0].transcript);
+  rec.onerror = e => onVoiceError(e.error === 'not-allowed' ? 'மைக் அனுமதி கொடுங்கள்' : null);
+  rec.onend = () => { rec = null; $('mic').classList.remove('on'); $('micLabel').textContent = 'தட்டி பேசுங்கள்'; };
+  try { rec.start(); $('mic').classList.add('on'); $('micLabel').textContent = 'கேட்கிறது…'; } catch (e) { rec = null; onVoiceError(); }
+});
+
+$('btnParse').addEventListener('click', () => { bill.said = $('said').value.trim(); applyParsed(VoiceParser.parse(bill.said), true); });
+$('btnNew').addEventListener('click', () => { newBill(); toast('புது பில்'); });
+$('btnAdd').addEventListener('click', () => { bill.items.push({ desc: '', qty: 1, unit: 'Nos', amount: 0 }); renderItems(); renderBill(); });
+$('items').addEventListener('input', e => {
+  const box = e.target.closest('.item'); if (!box) return;
+  const it = bill.items[+box.dataset.k], f = e.target.dataset.f;
+  it[f] = (f === 'qty' || f === 'amount') ? (e.target.value === '' ? '' : +e.target.value || 0) : e.target.value;
+  renderBill();
+});
+$('items').addEventListener('click', e => { const k = e.target.dataset.del; if (k != null) { bill.items.splice(+k, 1); renderItems(); renderBill(); } });
+$('cust').addEventListener('input', e => { bill.customer = e.target.value; renderBill(); });
+$('custPh').addEventListener('input', e => { bill.phone = e.target.value; renderBill(); });
+$('billNo').addEventListener('input', e => { bill.no = e.target.value; renderBill(); });
+$('billDate').addEventListener('input', e => { bill.date = e.target.value; renderBill(); });
+
+// save / history
+function saveBill(quiet) {
+  if (!bill.items.length) { toast('ஐட்டம் இல்லை'); return false; }
+  const list = store.get('bills', []);
+  const i = list.findIndex(b => String(b.no) === String(bill.no));
+  const copy = JSON.parse(JSON.stringify(bill)); copy.total = total();
+  if (i >= 0) list[i] = copy; else list.unshift(copy);
+  store.set('bills', list.slice(0, 300));
+  const n = parseInt(bill.no, 10);
+  if (n >= store.get('nextNo', 1)) store.set('nextNo', n + 1);
+  renderHistory(); if (!quiet) toast('பில் சேமிக்கப்பட்டது');
+  return true;
+}
+function renderHistory() {
+  const list = store.get('bills', []);
+  $('history').innerHTML = list.length ? list.slice(0, 50).map((b, k) => `
+    <div class="hist"><div><b>#${esc(b.no)}</b> ${esc(b.customer || '—')}<br><small>${fmtDate(b.date)} · ${inr(b.total)}</small></div>
+    <button data-open="${k}">திற</button></div>`).join('') : '<p class="empty">இன்னும் பில் இல்லை.</p>';
+}
+$('history').addEventListener('click', e => {
+  const k = e.target.dataset.open; if (k == null) return;
+  bill = JSON.parse(JSON.stringify(store.get('bills', [])[+k])); render(); scrollTo(0, 0);
+});
+$('btnSave').addEventListener('click', () => saveBill());
+
+// bill as image (for WhatsApp)
+function billCanvas() {
+  const W = 1000, P = 40, c = document.createElement('canvas'), x = c.getContext('2d');
+  const F = (s, b) => `${b ? 'bold ' : ''}${s}px "Noto Sans Tamil","Noto Sans",sans-serif`;
+  const wrap = (txt, w, font) => { x.font = font; const out = []; let line = ''; for (const word of String(txt).split(' ')) { const t = line ? line + ' ' + word : word; if (x.measureText(t).width > w && line) { out.push(line); line = word; } else line = t; } out.push(line); return out; };
+  const cols = [P, P + 74, P + 520, P + 660, P + 790, W - P];
+  const rows = bill.items.map(i => wrap(i.desc, cols[2] - cols[1] - 16, F(24)));
+  const H = 470 + rows.reduce((s, r) => s + r.length * 32 + 20, 0) + (shop.addr ? 34 * shop.addr.split('\n').length : 0) + 260;
+  c.width = W; c.height = H;
+  x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.fillStyle = '#000'; x.textBaseline = 'top';
+  const name = (shop.name || 'MY WORKSHOP').toUpperCase();
+  let y = P;
+  x.textAlign = 'center'; x.font = F(40, 1); x.fillText(name, W / 2, y); y += 56;
+  x.font = F(22);
+  if (shop.addr) for (const l of shop.addr.split('\n')) { x.fillText(l, W / 2, y); y += 34; }
+  if (shop.ph) { x.fillText('Ph: ' + shop.ph, W / 2, y); y += 34; }
+  y += 6; x.font = F(24, 1); const tw = x.measureText('CASH BILL').width + 30;
+  x.strokeRect(W / 2 - tw / 2, y - 4, tw, 38); x.fillText('CASH BILL', W / 2, y + 2); y += 52;
+  x.lineWidth = 2; x.beginPath(); x.moveTo(P, y); x.lineTo(W - P, y); x.stroke(); y += 18;
+  x.textAlign = 'left'; x.font = F(24); x.fillText('Bill No: ' + bill.no, P, y);
+  x.textAlign = 'right'; x.fillText('Date: ' + fmtDate(bill.date), W - P, y); y += 42;
+  x.textAlign = 'left'; x.font = F(26, 1); x.fillText('To: ' + (bill.customer || '-') + (bill.phone ? '   Ph: ' + bill.phone : ''), P, y); y += 50;
+  // table header
+  x.fillStyle = '#eee'; x.fillRect(P, y, W - 2 * P, 44); x.fillStyle = '#000'; x.font = F(22, 1);
+  const hd = ['S.No', 'Particulars', 'Qty', 'Rate', 'Amount'];
+  hd.forEach((h, k) => { x.textAlign = k > 1 ? 'right' : 'left'; x.fillText(h, k > 1 ? cols[k + 1] - 10 : cols[k] + 10, y + 10); });
+  const top = y; y += 44;
+  x.font = F(24);
+  bill.items.forEach((i, k) => {
+    const h = rows[k].length * 32 + 20, q = +i.qty || 1, a = +i.amount || 0;
+    x.textAlign = 'left'; x.fillText(String(k + 1), cols[0] + 10, y + 10);
+    rows[k].forEach((l, j) => x.fillText(l, cols[1] + 10, y + 10 + j * 32));
+    x.textAlign = 'right';
+    x.fillText(`${i.qty} ${i.unit}`, cols[3] - 10, y + 10); x.fillText(inr(a / q), cols[4] - 10, y + 10); x.fillText(inr(a), cols[5] - 10, y + 10);
+    y += h; x.beginPath(); x.moveTo(P, y); x.lineTo(W - P, y); x.lineWidth = 1; x.stroke();
+  });
+  x.font = F(28, 1); x.textAlign = 'right'; x.fillText('TOTAL', cols[4] - 10, y + 12); x.fillText(inr(total()), cols[5] - 10, y + 12);
+  y += 56; x.lineWidth = 2; x.strokeRect(P, top, W - 2 * P, y - top);
+  x.beginPath(); for (const cx of cols.slice(1, 5)) { x.moveTo(cx, top); x.lineTo(cx, y - 56); } x.moveTo(cols[4], y - 56); x.lineTo(cols[4], y); x.moveTo(P, y - 56); x.lineTo(W - P, y - 56); x.lineWidth = 1; x.stroke();
+  y += 16; x.textAlign = 'left'; x.font = F(22);
+  for (const l of wrap('Amount in words: Rupees ' + VoiceParser.words(total()) + ' Only', W - 2 * P, F(22))) { x.fillText(l, P, y); y += 32; }
+  y += 50; x.fillText(shop.note || '', P, y); x.textAlign = 'right'; x.font = F(22, 1); x.fillText('For ' + name, W - P, y); x.font = F(20); x.fillText('Signature', W - P, y + 80);
+  return c;
+}
+$('btnShare').addEventListener('click', async () => {
+  if (!bill.items.length) return toast('ஐட்டம் இல்லை');
+  saveBill(true);
+  const url = billCanvas().toDataURL('image/png'), fname = `Bill_${bill.no}.png`;
+  if (window.Android && Android.shareImage) { Android.shareImage(url.split(',')[1], fname, bill.phone || ''); return; }
+  try {
+    const blob = await (await fetch(url)).blob(), file = new File([blob], fname, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Bill ' + bill.no }); return; }
+  } catch (e) {}
+  const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
+});
+$('btnPrint').addEventListener('click', () => {
+  if (!bill.items.length) return toast('ஐட்டம் இல்லை');
+  saveBill(true);
+  if (window.Android && Android.printBill) Android.printBill('Bill_' + bill.no); else window.print();
+});
+
+// settings
+function openSet() { $('sName').value = shop.name; $('sAddr').value = shop.addr; $('sPh').value = shop.ph; $('sNote').value = shop.note; $('settings').style.display = 'block'; }
+$('btnSet').addEventListener('click', openSet);
+$('sClose').addEventListener('click', () => $('settings').style.display = 'none');
+$('sSave').addEventListener('click', () => {
+  shop = { name: $('sName').value.trim().toUpperCase(), addr: $('sAddr').value.trim(), ph: $('sPh').value.trim(), note: $('sNote').value.trim() };
+  store.set('shop', shop); $('settings').style.display = 'none'; renderBill(); toast('கடை விவரம் சேமிக்கப்பட்டது');
+});
+window.onBack = () => { if ($('settings').style.display === 'block') { $('settings').style.display = 'none'; return true; } return false; };
+
+newBill();
+if (!shop.name) setTimeout(openSet, 400);
+}
+</script>
+</body>
+</html>
